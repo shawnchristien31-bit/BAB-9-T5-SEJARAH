@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="ms" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infografik 3D Maya: Pergerakan Negara-Negara Berkecuali (NAM)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js for 3D Interactive World -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --nam-blue: #0284c7;
+            --nam-gold: #fbbf24;
+            --nam-cyan: #38bdf8;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #030b1c;
+            color: #f8fafc;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+        }
+        .font-display {
+            font-family: 'Orbitron', sans-serif;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.5);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(251, 191, 36, 0.8);
+        }
+
+        /* Glassmorphism Containers */
+        .glass-panel {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.82) 0%, rgba(12, 34, 68, 0.75) 100%);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(56, 189, 248, 0.28);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+        }
+
+        .glass-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.78), rgba(15, 23, 42, 0.9));
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .glass-card:hover {
+            transform: translateY(-4px) scale(1.01);
+            border-color: rgba(56, 189, 248, 0.6);
+            box-shadow: 0 15px 35px -5px rgba(2, 132, 199, 0.35);
+        }
+
+        /* 3D Perspective Tilt Effect */
+        .tilt-card {
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+
+        /* 3D Flip Card for Q&A */
+        .flip-card {
+            perspective: 1200px;
+            height: 230px;
+        }
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 1rem;
+        }
+        .flip-card-back {
+            transform: rotateY(180deg);
+        }
+
+        /* Floating 3D Pin Label */
+        .hotspot-marker {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            pointer-events: auto;
+            cursor: pointer;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            z-index: 20;
+        }
+        .hotspot-marker:hover {
+            transform: translate(-50%, -50%) scale(1.15);
+            z-index: 30;
+        }
+
+        /* Pulse Ring Animation */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.9; }
+            100% { transform: scale(2.2); opacity: 0; }
+        }
+        .pulse-dot::before {
+            content: '';
+            position: absolute;
+            inset: -6px;
+            border-radius: 9999px;
+            background: currentColor;
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+            z-index: -1;
+        }
+
+        /* Gold metallic text effect matching the poster header */
+        .gold-title {
+            background: linear-gradient(to bottom, #fff7cc 0%, #fbbf24 45%, #d97706 85%, #fef08a 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.65));
+        }
+
+        .silver-title {
+            background: linear-gradient(to bottom, #ffffff 0%, #e2e8f0 50%, #94a3b8 90%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.65));
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="select-none md:select-auto">
+
+    <!-- 3D WebGL Canvas Background & Interactive Stage -->
+    <div id="canvas-container"></div>
+
+    <!-- 3D Projected Hotspots Container (Synchronized with 3D Globe Nodes) -->
+    <div id="hotspots-layer" class="fixed inset-0 pointer-events-none z-10 overflow-hidden"></div>
+
+    <!-- Main UI Overlay -->
+    <div class="relative z-20 flex flex-col min-h-screen pointer-events-none">
+
+        <!-- Top Header Banner -->
+        <header class="pointer-events-auto w-full px-3 pt-3 pb-2 md:px-6 md:pt-4">
+            <div class="max-w-7xl mx-auto glass-panel rounded-2xl p-3 md:p-4 border-t-2 border-sky-400/50 relative overflow-hidden">
+                <!-- Subtle decorative glow -->
+                <div class="absolute -top-24 -left-24 w-64 h-64 bg-sky-500/20 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute -top-24 -right-24 w-64 h-64 bg-amber-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div class="flex flex-col lg:flex-row items-center justify-between gap-3">
+                    <!-- Left: Peace Dove & Globe Emblem SVG + Titles -->
+                    <div class="flex items-center gap-3 md:gap-4 text-center sm:text-left flex-col sm:flex-row">
+                        <div class="relative w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-sky-500 via-blue-700 to-indigo-950 p-1 shadow-lg shadow-sky-500/30 border border-sky-300/40 flex items-center justify-center shrink-0 group cursor-pointer" onclick="focusCameraOnNode('overview')" title="Reset Kamera 3D">
+                            <!-- Custom SVG Dove & Globe Emblem -->
+                            <svg viewBox="0 0 100 100" class="w-12 h-12 group-hover:scale-110 transition-transform">
+                                <circle cx="50" cy="50" r="38" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="4 2"/>
+                                <ellipse cx="50" cy="50" rx="20" ry="38" fill="none" stroke="#38bdf8" stroke-width="1.5" opacity="0.7"/>
+                                <line x1="12" y1="50" x2="88" y2="50" stroke="#38bdf8" stroke-width="1.5" opacity="0.7"/>
+                                <!-- Olive Branch & Dove -->
+                                <path d="M28 62 C35 45, 50 38, 75 30 C65 45, 62 55, 72 65 C55 62, 42 68, 28 62 Z" fill="#ffffff"/>
+                                <path d="M22 60 Q28 52 35 56" stroke="#fbbf24" stroke-width="3" fill="none" stroke-linecap="round"/>
+                                <circle cx="34" cy="52" r="2" fill="#0284c7"/>
+                            </svg>
+                            <span class="absolute -bottom-1 -right-1 bg-amber-400 text-slate-950 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md shadow">3D</span>
+                        </div>
+
+                        <div>
+                            <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-300 text-xs font-semibold mb-1">
+                                <i data-lucide="book-open" class="w-3.5 h-3.5 text-amber-400"></i>
+                                <span>Sejarah Tingkatan 5 • Bab 9: Dasar Luar Malaysia (Subtopik 9.7)</span>
+                            </div>
+                            <h1 class="font-display text-lg sm:text-2xl md:text-3xl font-black tracking-wide leading-tight">
+                                <span class="silver-title">PERGERAKAN</span>
+                                <span class="gold-title block sm:inline"> NEGARA-NEGARA BERKECUALI (NAM)</span>
+                            </h1>
+                            <p class="text-xs md:text-sm text-sky-200/90 italic font-medium mt-0.5">
+                                "Bersama ke arah dunia yang lebih aman, adil dan seimbang."
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Right: View Mode Switcher & 3D Camera Controls -->
+                    <div class="flex flex-wrap items-center justify-center gap-1.5 bg-slate-900/80 p-1.5 rounded-xl border border-slate-700/70">
+                        <button onclick="switchMode('explore3d')" id="tab-explore3d" class="mode-tab active-tab flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs md:text-sm font-bold transition-all bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-lg shadow-sky-500/30">
+                            <i data-lucide="globe-2" class="w-4 h-4"></i>
+                            <span>Ruang 3D</span>
+                        </button>
+                        <button onclick="switchMode('sec1')" id="tab-sec1" class="mode-tab flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs md:text-sm font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all">
+                            <span class="w-5 h-5 rounded-full bg-sky-500 text-white text-xs flex items-center justify-center font-extrabold">1</span>
+                            <span>Nota & Fakta</span>
+                        </button>
+                        <button onclick="switchMode('sec2')" id="tab-sec2" class="mode-tab flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs md:text-sm font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all">
+                            <span class="w-5 h-5 rounded-full bg-amber-500 text-slate-950 text-xs flex items-center justify-center font-extrabold">2</span>
+                            <span>Popular SPM</span>
+                        </button>
+                        <button onclick="switchMode('sec3')" id="tab-sec3" class="mode-tab flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs md:text-sm font-bold text-slate-300 hover:text-white hover:bg-slate-800/70 transition-all">
+                            <span class="w-5 h-5 rounded-full bg-emerald-500 text-slate-950 text-xs flex items-center justify-center font-extrabold">3</span>
+                            <span>Soalan & Jawapan</span>
+                        </button>
+                        <button onclick="switchMode('quiz')" id="tab-quiz" class="mode-tab flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs md:text-sm font-bold text-amber-300 hover:bg-amber-500/20 border border-amber-400/30 transition-all">
+                            <i data-lucide="trophy" class="w-4 h-4"></i>
+                            <span>Kuiz SPM</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN WORKSPACE AREA -->
+        <main class="flex-1 flex flex-col justify-between px-3 pb-3 md:px-6 md:pb-5 max-w-7xl w-full mx-auto">
+
+            <!-- MODE 0: 3D INTERACTIVE GLOBE EXPLORER -->
+            <section id="view-explore3d" class="flex-1 flex flex-col justify-between py-2">
+                <!-- Top Floating Instruction & 6 Pillars of NAM Monument Bar -->
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-2 pointer-events-auto">
+                    <div class="glass-panel px-3.5 py-2 rounded-xl flex items-center gap-2.5 text-xs md:text-sm text-sky-200 border border-sky-400/30">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                        <span><strong>Kawalan 3D:</strong> Seret tetikus / jari untuk pusing glob • Klik <strong>Pin 3D</strong> untuk info terperinci</span>
+                    </div>
+
+                    <!-- Tugu Prinsip NAM (Right side of poster header) -->
+                    <div class="flex flex-wrap items-center justify-center gap-1.5">
+                        <span class="text-[11px] uppercase tracking-wider text-amber-300 font-bold mr-1 hidden md:inline">Tugu Prinsip:</span>
+                        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-900/90 border border-sky-400/40 text-sky-300">BEBAS</span>
+                        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-900/90 border border-sky-400/40 text-sky-300">BERKECUALI</span>
+                        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-900/90 border border-emerald-400/40 text-emerald-300">AMAN</span>
+                        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-900/90 border border-amber-400/40 text-amber-300">KERJASAMA</span>
+                        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-900/90 border border-purple-400/40 text-purple-300">KEADILAN</span>
+                        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-900/90 border border-rose-400/40 text-rose-300">DUNIA SEJAHTERA</span>
+                    </div>
+                </div>
+
+                <!-- Center Selected 3D Node Inspector Card (Appears on Left/Right when clicking a 3D Hotspot) -->
+                <div class="my-auto flex items-center justify-end pointer-events-none py-4">
+                    <div id="node-inspector" class="pointer-events-auto w-full max-w-md glass-panel rounded-2xl p-5 border-l-4 border-amber-400 transition-all duration-300 shadow-2xl">
+                        <div class="flex items-start justify-between gap-3 mb-3">
+                            <div class="flex items-center gap-2.5">
+                                <div id="inspector-badge" class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-amber-300 font-display font-bold">
+                                    1A
+                                </div>
+                                <div>
+                                    <span id="inspector-category" class="text-[11px] font-bold uppercase tracking-wider text-sky-400 block">Latar Belakang Penyertaan</span>
+                                    <h3 id="inspector-title" class="text-base md:text-lg font-extrabold text-white leading-snug">Penyertaan Rasmi Malaysia (April 1970)</h3>
+                                </div>
+                            </div>
+                            <button onclick="rotateGlobeToggle()" id="btn-autorotate" class="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-sky-300 border border-slate-600/50 text-xs flex items-center gap-1" title="Auto-Putar Glob">
+                                <i data-lucide="rotate-3d" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+
+                        <div id="inspector-body" class="text-xs md:text-sm text-slate-200 space-y-2.5 leading-relaxed bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
+                            <p>• Selepas mencapai kemerdekaan, Malaysia mengamalkan dasar <strong>pro-Barat</strong>. Pada awal tahun 1970-an, Malaysia menamatkan dasar pro-Barat dan mengamalkan <strong>dasar berkecuali</strong> serta menyertai NAM.</p>
+                            <p>• Malaysia mula menyertai NAM pada <strong>April 1970</strong> apabila <strong>Muhammad Ghazali Shafie</strong> (Setiausaha Tetap Kementerian Luar Negeri) menghadiri mesyuarat penyediaan Sidang Kemuncak NAM di <strong>Dar es Salam, Tanzania</strong>.</p>
+                        </div>
+
+                        <!-- Quick Node Selector Pills -->
+                        <div class="mt-4 pt-3 border-t border-slate-700/60">
+                            <div class="text-[11px] font-semibold text-slate-400 mb-2 flex items-center justify-between">
+                                <span>Lompat ke Lokasi / Fakta 3D:</span>
+                                <span id="inspector-coords" class="text-sky-400 font-mono">Dar es Salam, Tanzania</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-1.5" id="quick-node-buttons">
+                                <!-- Populated via JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Motto Bar & Camera Controls -->
+                <div class="pointer-events-auto glass-panel rounded-2xl p-3 flex flex-col md:flex-row items-center justify-between gap-3">
+                    <div class="flex items-center gap-2 text-xs md:text-sm font-extrabold tracking-widest text-amber-300 text-center">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-sky-400 shrink-0"></i>
+                        <span>“DIALOG • HORMAT • BERKECUALI • KEAMANAN • KERJASAMA”</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="zoomCamera(-2.2)" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-600 flex items-center gap-1">
+                            <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i> Dekat
+                        </button>
+                        <button onclick="zoomCamera(2.2)" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-600 flex items-center gap-1">
+                            <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i> Jauh
+                        </button>
+                        <button onclick="switchMode('sec1')" class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 text-xs font-extrabold shadow hover:brightness-110 flex items-center gap-1">
+                            <span>Buka Infografik Penuh</span>
+                            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MODE 1: BAHAGIAN 1 - NOTA TEPAT & FAKTA UTAMA -->
+            <section id="view-sec1" class="hidden pointer-events-auto my-2 space-y-5">
+                <!-- Section 1 Banner -->
+                <div class="glass-panel rounded-2xl p-4 md:p-5 border-l-4 border-sky-400 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-700 flex items-center justify-center text-white font-display text-2xl font-black shadow-lg shadow-sky-500/30 shrink-0">
+                            1
+                        </div>
+                        <div>
+                            <h2 class="font-display text-lg md:text-2xl font-extrabold text-white tracking-wide">
+                                NOTA TEPAT & FAKTA UTAMA: MALAYSIA DALAM NAM
+                            </h2>
+                            <p class="text-xs md:text-sm text-sky-300">Klik mana-mana kad 3D di bawah untuk memfokuskan lokasi pada Glob 3D di belakang.</p>
+                        </div>
+                    </div>
+                    <button onclick="switchMode('explore3d')" class="px-3.5 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/40 text-sky-200 text-xs font-bold flex items-center gap-1.5 shrink-0">
+                        <i data-lucide="eye" class="w-4 h-4"></i> Lihat Glob 3D Penuh
+                    </button>
+                </div>
+
+                <!-- Grid for Part A & Part B -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                    <!-- Bahagian A: Latar Belakang Penyertaan Malaysia dalam NAM -->
+                    <div class="lg:col-span-5 glass-panel rounded-2xl p-4 md:p-5 space-y-4 border-t-4 border-sky-500">
+                        <div class="flex items-center gap-3 pb-2 border-b border-slate-700/80">
+                            <span class="w-8 h-8 rounded-lg bg-sky-500 text-white font-display font-black flex items-center justify-center text-base shadow">A</span>
+                            <h3 class="text-base md:text-lg font-extrabold text-sky-200">Latar Belakang Penyertaan Malaysia dalam NAM</h3>
+                        </div>
+
+                        <!-- Item A1 -->
+                        <div onclick="selectNodeFromCard('node_dasar')" class="glass-card rounded-xl p-4 cursor-pointer relative overflow-hidden group">
+                            <div class="flex items-start gap-3.5">
+                                <!-- Custom SVG Flag & Globe Icon -->
+                                <div class="w-14 h-14 rounded-xl bg-sky-950/90 border border-sky-500/40 flex flex-col items-center justify-center shrink-0 p-1.5">
+                                    <svg viewBox="0 0 64 48" class="w-10 h-8">
+                                        <rect width="64" height="48" rx="6" fill="#0f172a"/>
+                                        <!-- Stripes -->
+                                        <rect x="4" y="6" width="56" height="4" fill="#ef4444"/>
+                                        <rect x="4" y="14" width="56" height="4" fill="#ffffff"/>
+                                        <rect x="4" y="22" width="56" height="4" fill="#ef4444"/>
+                                        <rect x="4" y="30" width="56" height="4" fill="#ffffff"/>
+                                        <rect x="4" y="38" width="56" height="4" fill="#ef4444"/>
+                                        <!-- Canton -->
+                                        <rect x="4" y="6" width="28" height="22" fill="#1d4ed8"/>
+                                        <circle cx="15" cy="17" r="6" fill="#fbbf24"/>
+                                        <circle cx="17" cy="17" r="5" fill="#1d4ed8"/>
+                                        <circle cx="22" cy="17" r="3" fill="#fbbf24"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-5 h-5 rounded-full bg-sky-500 text-white text-xs font-bold flex items-center justify-center">1</span>
+                                        <h4 class="font-extrabold text-white text-sm md:text-base group-hover:text-sky-300 transition-colors">Perubahan Dasar Luar</h4>
+                                    </div>
+                                    <p class="text-xs md:text-sm text-slate-300 mt-1.5 leading-relaxed">
+                                        Selepas mencapai kemerdekaan, Malaysia mengamalkan dasar <strong class="text-white">pro-Barat</strong>. Pada awal tahun 1970-an, Malaysia menamatkan dasar pro-Barat dan mengamalkan <strong class="text-sky-300">dasar berkecuali</strong> serta menyertai NAM.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Item A2 -->
+                        <div onclick="selectNodeFromCard('node_1970')" class="glass-card rounded-xl p-4 cursor-pointer relative overflow-hidden group">
+                            <div class="flex items-start gap-3.5">
+                                <!-- Calendar April 1970 Badge -->
+                                <div class="w-14 h-14 rounded-xl bg-white text-slate-900 border-2 border-red-500 flex flex-col items-center justify-center shrink-0 shadow-md overflow-hidden">
+                                    <div class="w-full bg-red-600 text-white text-[9px] font-black text-center py-0.5 uppercase tracking-wider">APRIL</div>
+                                    <div class="font-display font-black text-sm leading-tight mt-0.5">1970</div>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-5 h-5 rounded-full bg-sky-500 text-white text-xs font-bold flex items-center justify-center">2</span>
+                                        <h4 class="font-extrabold text-white text-sm md:text-base group-hover:text-sky-300 transition-colors">Penyertaan Rasmi</h4>
+                                    </div>
+                                    <p class="text-xs md:text-sm text-slate-300 mt-1.5 leading-relaxed">
+                                        Malaysia mula menyertai NAM pada <strong class="text-amber-300">April 1970</strong> apabila <strong class="text-white">Muhammad Ghazali Shafie</strong> (Setiausaha Tetap Kementerian Luar Negeri) menghadiri mesyuarat penyediaan Sidang Kemuncak NAM di <strong class="text-sky-300">Dar es Salam, Tanzania</strong>.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Item A3 -->
+                        <div onclick="selectNodeFromCard('node_prinsip')" class="glass-card rounded-xl p-4 cursor-pointer relative overflow-hidden group">
+                            <div class="flex items-start gap-3.5">
+                                <div class="w-14 h-14 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center shrink-0 text-amber-300">
+                                    <i data-lucide="handshake" class="w-8 h-8"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-5 h-5 rounded-full bg-sky-500 text-white text-xs font-bold flex items-center justify-center">3</span>
+                                        <h4 class="font-extrabold text-white text-sm md:text-base group-hover:text-sky-300 transition-colors">Prinsip Perjuangan</h4>
+                                    </div>
+                                    <p class="text-xs md:text-sm text-slate-300 mt-1.5 leading-relaxed">
+                                        Penyertaan dalam NAM membuktikan perubahan dasar luar Malaysia kepada dasar yang lebih terbuka berteraskan prinsip <strong class="text-amber-300">neutral, aman, bebas dan berkecuali</strong>.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bahagian B: Peranan dan Sumbangan Utama Malaysia dalam NAM -->
+                    <div class="lg:col-span-7 glass-panel rounded-2xl p-4 md:p-5 space-y-4 border-t-4 border-indigo-500">
+                        <div class="flex items-center gap-3 pb-2 border-b border-slate-700/80">
+                            <span class="w-8 h-8 rounded-lg bg-indigo-500 text-white font-display font-black flex items-center justify-center text-base shadow">B</span>
+                            <h3 class="text-base md:text-lg font-extrabold text-indigo-200">Peranan dan Sumbangan Utama Malaysia dalam NAM</h3>
+                        </div>
+
+                        <!-- Item B1: Tuan Rumah Sidang Kemuncak & Pengerusi NAM -->
+                        <div onclick="selectNodeFromCard('node_kl2003')" class="glass-card rounded-xl p-4 cursor-pointer border-l-4 border-l-purple-500 group">
+                            <div class="flex flex-col sm:flex-row items-start gap-4">
+                                <!-- Twin Towers SVG Illustration -->
+                                <div class="w-full sm:w-28 h-24 rounded-xl bg-gradient-to-b from-indigo-950 to-slate-900 border border-purple-400/30 flex items-center justify-center shrink-0 relative overflow-hidden">
+                                    <svg viewBox="0 0 100 80" class="w-24 h-20">
+                                        <!-- Sky glow -->
+                                        <circle cx="50" cy="40" r="30" fill="#a855f7" opacity="0.15"/>
+                                        <!-- Left Tower -->
+                                        <rect x="26" y="25" width="14" height="50" fill="#38bdf8" opacity="0.85"/>
+                                        <polygon points="26,25 33,8 40,25" fill="#e2e8f0"/>
+                                        <line x1="33" y1="2" x2="33" y2="8" stroke="#fbbf24" stroke-width="2"/>
+                                        <!-- Right Tower -->
+                                        <rect x="60" y="25" width="14" height="50" fill="#38bdf8" opacity="0.85"/>
+                                        <polygon points="60,25 67,8 74,25" fill="#e2e8f0"/>
+                                        <line x1="67" y1="2" x2="67" y2="8" stroke="#fbbf24" stroke-width="2"/>
+                                        <!-- Skybridge -->
+                                        <rect x="40" y="42" width="20" height="4" fill="#fbbf24"/>
+                                        <!-- Convention Center Dome -->
+                                        <path d="M15 75 Q50 55 85 75 Z" fill="#f59e0b" opacity="0.8"/>
+                                    </svg>
+                                    <span class="absolute bottom-1 right-1.5 text-[10px] font-black bg-purple-600 text-white px-1.5 rounded">KL 2003</span>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="w-6 h-6 rounded-full bg-purple-600 text-white text-xs font-bold flex items-center justify-center">1</span>
+                                        <h4 class="font-extrabold text-purple-200 text-sm md:text-base group-hover:text-white transition-colors">Tuan Rumah Sidang Kemuncak & Pengerusi NAM</h4>
+                                    </div>
+                                    <ul class="text-xs md:text-sm text-slate-300 space-y-1.5 leading-relaxed">
+                                        <li>• <strong class="text-white">Tuan Rumah 2003:</strong> Malaysia menjadi tuan rumah <span class="text-amber-300 font-semibold">Sidang Kemuncak NAM ke-13</span> pada tahun 2003 di Kuala Lumpur.</li>
+                                        <li>• <strong class="text-white">Deklarasi Kuala Lumpur:</strong> Menegaskan sikap NAM terhadap <span class="text-sky-300 font-semibold">isu Palestin</span> serta membantah serangan Amerika Syarikat ke atas <span class="text-sky-300 font-semibold">Iraq</span>.</li>
+                                        <li>• <strong class="text-white">Pengerusi NAM (2003–2006):</strong> <span class="text-amber-300 font-semibold">Tun Abdullah Ahmad Badawi</span> dilantik sebagai Pengerusi NAM dan meningkatkan martabat pertubuhan ini.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Item B2: Peranan dalam Politik & Hak Asasi Manusia -->
+                        <div onclick="selectNodeFromCard('node_aparteid')" class="glass-card rounded-xl p-4 cursor-pointer border-l-4 border-l-emerald-500 group">
+                            <div class="flex flex-col sm:flex-row items-start gap-4">
+                                <div class="w-full sm:w-28 h-24 rounded-xl bg-gradient-to-b from-emerald-950 to-slate-900 border border-emerald-400/30 flex flex-col items-center justify-center shrink-0 p-2 text-center">
+                                    <i data-lucide="shield-check" class="w-9 h-9 text-emerald-400 mb-1"></i>
+                                    <span class="text-[10px] font-bold text-emerald-200 uppercase">Hak Asasi & Kemanusiaan</span>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center">2</span>
+                                        <h4 class="font-extrabold text-emerald-200 text-sm md:text-base group-hover:text-white transition-colors">Peranan dalam Politik & Hak Asasi Manusia</h4>
+                                    </div>
+                                    <ul class="text-xs md:text-sm text-slate-300 space-y-1.5 leading-relaxed">
+                                        <li>• <strong class="text-white">Menentang Dasar Aparteid:</strong> Malaysia menggunakan platform NAM untuk menentang dasar Aparteid dan menyokong tekanan politik serta ekonomi terhadap <span class="text-emerald-300 font-semibold">Afrika Selatan</span>.</li>
+                                        <li>• <strong class="text-white">Isu Bosnia dan Herzegovina:</strong> Pada <span class="text-amber-300 font-semibold">Sidang Kemuncak NAM 1992 di Jakarta</span>, Malaysia membangkitkan isu pencerobohan Serbia terhadap Bosnia. Usaha ini membawa kepada <span class="text-emerald-300 font-semibold">penggantungan Yugoslavia</span> daripada NAM dan Malaysia turut menerima pelarian Bosnia dan Herzegovina.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Item B3: Dasar Keamanan & Kawalan Senjata Nuklear -->
+                        <div onclick="selectNodeFromCard('node_lusaka')" class="glass-card rounded-xl p-4 cursor-pointer border-l-4 border-l-rose-500 group">
+                            <div class="flex flex-col sm:flex-row items-start gap-4">
+                                <div class="w-full sm:w-28 h-24 rounded-xl bg-gradient-to-b from-rose-950 to-slate-900 border border-rose-400/30 flex flex-col items-center justify-center shrink-0 p-2 text-center">
+                                    <div class="w-10 h-10 rounded-full border-2 border-rose-500 flex items-center justify-center relative mb-1">
+                                        <i data-lucide="radiation" class="w-6 h-6 text-amber-400"></i>
+                                        <div class="w-full h-0.5 bg-rose-500 rotate-45 absolute"></div>
+                                    </div>
+                                    <span class="text-[10px] font-black text-amber-200">LUSAKA 1970</span>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="w-6 h-6 rounded-full bg-rose-600 text-white text-xs font-bold flex items-center justify-center">3</span>
+                                        <h4 class="font-extrabold text-rose-200 text-sm md:text-base group-hover:text-white transition-colors">Dasar Keamanan & Kawalan Senjata Nuklear</h4>
+                                    </div>
+                                    <ul class="text-xs md:text-sm text-slate-300 space-y-1.5 leading-relaxed">
+                                        <li>• <strong class="text-white">Perisytiharan Lusaka (1970):</strong> Malaysia menandatangani perisytiharan ini sebagai komitmen NAM mendesak <span class="text-rose-300 font-semibold">pengharaman penggunaan senjata nuklear</span>.</li>
+                                        <li>• <strong class="text-white">Bebas Campur Tangan Kuasa Besar:</strong> Malaysia mendesak <span class="text-amber-300 font-semibold">Amerika Syarikat, Rusia dan China</span> agar mengiktiraf Asia Tenggara sebagai kawasan berkecuali dan tidak campur tangan di rantau ini.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <!-- MODE 2: BAHAGIAN 2 - SOALAN KERAP DITANYAKAN (POPULAR SPM) -->
+            <section id="view-sec2" class="hidden pointer-events-auto my-2 space-y-5">
+                <div class="glass-panel rounded-2xl p-4 md:p-5 border-l-4 border-amber-400 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-slate-950 font-display text-2xl font-black shadow-lg shadow-amber-500/30 shrink-0">
+                            2
+                        </div>
+                        <div>
+                            <h2 class="font-display text-lg md:text-2xl font-extrabold text-white tracking-wide">
+                                SOALAN KERAP DITANYAKAN (POPULAR SPM)
+                            </h2>
+                            <p class="text-xs md:text-sm text-amber-300">5 fokus soalan utama SPM yang wajib dikuasai. Klik pada setiap soalan untuk kupasan lengkap & simulasi 3D.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+                    <!-- Left: 5 Interactive Accordion / Bubble Cards matching Poster Section 2 -->
+                    <div class="lg:col-span-7 space-y-3">
+                        <!-- Popular 1 (Pink Bubble) -->
+                        <div onclick="showSpmHotspot(1)" id="spm-item-1" class="glass-card rounded-2xl p-4 cursor-pointer border-l-8 border-l-pink-500 hover:border-pink-400 transition-all">
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="flex items-center gap-3.5">
+                                    <span class="w-9 h-9 rounded-full bg-pink-600 text-white font-display font-black flex items-center justify-center text-base shadow-lg">1</span>
+                                    <div class="w-11 h-11 rounded-xl bg-pink-500/20 border border-pink-400/40 flex items-center justify-center text-pink-300 shrink-0">
+                                        <i data-lucide="calendar-question" class="w-6 h-6"></i>
+                                    </div>
+                                    <h3 class="font-extrabold text-white text-sm md:text-base">Bilakah Malaysia menyertai NAM?</h3>
+                                </div>
+                                <i data-lucide="chevron-right" class="w-5 h-5 text-pink-400 shrink-0"></i>
+                            </div>
+                        </div>
+
+                        <!-- Popular 2 (Sky Blue Bubble) -->
+                        <div onclick="showSpmHotspot(2)" id="spm-item-2" class="glass-card rounded-2xl p-4 cursor-pointer border-l-8 border-l-sky-500 hover:border-sky-400 transition-all">
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="flex items-center gap-3.5">
+                                    <span class="w-9 h-9 rounded-full bg-sky-600 text-white font-display font-black flex items-center justify-center text-base shadow-lg">2</span>
+                                    <div class="w-11 h-11 rounded-xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-sky-300 shrink-0">
+                                        <i data-lucide="users" class="w-6 h-6"></i>
+                                    </div>
+                                    <h3 class="font-extrabold text-white text-sm md:text-base">Mengapakah Malaysia menyertai NAM?</h3>
+                                </div>
+                                <i data-lucide="chevron-right" class="w-5 h-5 text-sky-400 shrink-0"></i>
+                            </div>
+                        </div>
+
+                        <!-- Popular 3 (Amber Gold Bubble) -->
+                        <div onclick="showSpmHotspot(3)" id="spm-item-3" class="glass-card rounded-2xl p-4 cursor-pointer border-l-8 border-l-amber-500 hover:border-amber-400 transition-all">
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="flex items-center gap-3.5">
+                                    <span class="w-9 h-9 rounded-full bg-amber-500 text-slate-950 font-display font-black flex items-center justify-center text-base shadow-lg">3</span>
+                                    <div class="w-11 h-11 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 shrink-0">
+                                        <i data-lucide="mic" class="w-6 h-6"></i>
+                                    </div>
+                                    <h3 class="font-extrabold text-white text-sm md:text-base">Apakah peranan Malaysia dalam NAM?</h3>
+                                </div>
+                                <i data-lucide="chevron-right" class="w-5 h-5 text-amber-400 shrink-0"></i>
+                            </div>
+                        </div>
+
+                        <!-- Popular 4 (Purple Bubble) -->
+                        <div onclick="showSpmHotspot(4)" id="spm-item-4" class="glass-card rounded-2xl p-4 cursor-pointer border-l-8 border-l-purple-500 hover:border-purple-400 transition-all">
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="flex items-center gap-3.5">
+                                    <span class="w-9 h-9 rounded-full bg-purple-600 text-white font-display font-black flex items-center justify-center text-base shadow-lg">4</span>
+                                    <div class="w-11 h-11 rounded-xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-purple-300 shrink-0">
+                                        <i data-lucide="building-2" class="w-6 h-6"></i>
+                                    </div>
+                                    <h3 class="font-extrabold text-white text-sm md:text-base">Mengapakah Sidang Kemuncak NAM 2003 penting kepada Malaysia?</h3>
+                                </div>
+                                <i data-lucide="chevron-right" class="w-5 h-5 text-purple-400 shrink-0"></i>
+                            </div>
+                        </div>
+
+                        <!-- Popular 5 (Emerald Bubble) -->
+                        <div onclick="showSpmHotspot(5)" id="spm-item-5" class="glass-card rounded-2xl p-4 cursor-pointer border-l-8 border-l-emerald-500 hover:border-emerald-400 transition-all">
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="flex items-center gap-3.5">
+                                    <span class="w-9 h-9 rounded-full bg-emerald-600 text-white font-display font-black flex items-center justify-center text-base shadow-lg">5</span>
+                                    <div class="w-11 h-11 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 shrink-0">
+                                        <i data-lucide="globe" class="w-6 h-6"></i>
+                                    </div>
+                                    <h3 class="font-extrabold text-white text-sm md:text-base">Bagaimanakah Malaysia menunjukkan komitmen terhadap keamanan dunia melalui NAM?</h3>
+                                </div>
+                                <i data-lucide="chevron-right" class="w-5 h-5 text-emerald-400 shrink-0"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Holographic SPM Answer & Exam Tips Stage -->
+                    <div class="lg:col-span-5 glass-panel rounded-2xl p-5 flex flex-col justify-between border border-amber-400/40 relative overflow-hidden">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <span id="spm-detail-badge" class="px-3 py-1 rounded-full bg-pink-500/20 border border-pink-400/50 text-pink-300 text-xs font-extrabold">
+                                    SOALAN POPULAR #1
+                                </span>
+                                <span class="text-xs text-slate-400 font-semibold">Panduan Skema SPM</span>
+                            </div>
+
+                            <h3 id="spm-detail-question" class="text-lg md:text-xl font-extrabold text-white mb-4 leading-snug">
+                                Bilakah Malaysia menyertai NAM?
+                            </h3>
+
+                            <div id="spm-detail-answer" class="bg-slate-950/80 rounded-xl p-4 border border-slate-800 space-y-3 text-xs md:text-sm text-slate-200 leading-relaxed">
+                                <p>• Malaysia mula menyertai NAM secara rasmi pada <strong class="text-amber-300">April 1970</strong>.</p>
+                                <p>• Penyertaan ini diwakili oleh <strong class="text-sky-300">Muhammad Ghazali Shafie</strong> (Setiausaha Tetap Kementerian Luar Negeri) yang menghadiri mesyuarat penyediaan Sidang Kemuncak NAM di <strong class="text-emerald-300">Dar es Salam, Tanzania</strong>.</p>
+                            </div>
+                        </div>
+
+                        <!-- Bottom Symbolic Peace Globe Banner matching bottom of column 2 -->
+                        <div class="mt-6 pt-4 border-t border-slate-700/70">
+                            <div class="bg-gradient-to-r from-sky-900/60 via-blue-900/60 to-indigo-900/60 rounded-xl p-3.5 border border-sky-400/30 text-center">
+                                <p class="text-[11px] text-sky-300 uppercase font-bold tracking-widest mb-1">Nilai Teras Pergerakan NAM</p>
+                                <p class="text-xs md:text-sm font-black text-amber-300 tracking-wider">
+                                    “DIALOG • HORMAT • BERKECUALI • KEAMANAN • KERJASAMA”
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MODE 3: BAHAGIAN 3 - SET SOALAN & JAWAPAN TEPAT (Q1 - Q6) -->
+            <section id="view-sec3" class="hidden pointer-events-auto my-2 space-y-5">
+                <div class="glass-panel rounded-2xl p-4 md:p-5 border-l-4 border-emerald-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-700 flex items-center justify-center text-slate-950 font-display text-2xl font-black shadow-lg shadow-emerald-500/30 shrink-0">
+                            3
+                        </div>
+                        <div>
+                            <h2 class="font-display text-lg md:text-2xl font-extrabold text-white tracking-wide">
+                                SET SOALAN & JAWAPAN TEPAT (Q1 – Q6)
+                            </h2>
+                            <p class="text-xs md:text-sm text-emerald-300">Klik mana-mana kad untuk membalikkan kad 3D atau klik "Buka Semua Jawapan".</p>
+                        </div>
+                    </div>
+                    <button onclick="flipAllCards()" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs md:text-sm shadow-lg shadow-emerald-500/20 flex items-center gap-2 shrink-0">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                        <span>Terbalikkan Semua Kad</span>
+                    </button>
+                </div>
+
+                <!-- 6 3D Flip Cards Grid (Exact Q1-Q6 from Poster) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="qa-cards-grid">
+                    <!-- Populated via JavaScript -->
+                </div>
+            </section>
+
+            <!-- MODE 4: KUIZ INTERAKTIF SPM -->
+            <section id="view-quiz" class="hidden pointer-events-auto my-2">
+                <div class="max-w-3xl mx-auto glass-panel rounded-2xl p-5 md:p-7 border-t-4 border-amber-400">
+                    <div class="flex items-center justify-between gap-4 pb-4 border-b border-slate-700/80 mb-5">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300">
+                                <i data-lucide="award" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <h2 class="font-display text-lg md:text-xl font-black text-white">CABARAN KUIZ PANTAS SPM: BAB 9.7 (NAM)</h2>
+                                <p class="text-xs text-slate-300">Uji ingatan anda berdasarkan fakta tepat daripada infografik.</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400 block">Skor Semasa</span>
+                            <span id="quiz-score-badge" class="font-display text-lg font-black text-amber-400">0 / 6</span>
+                        </div>
+                    </div>
+
+                    <div id="quiz-container">
+                        <!-- Rendered dynamically by JS -->
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. DATA INFOGRAFIK LENGKAP (MENGIKUT POSTER)
+        // ==========================================
+        const nodes3DData = [
+            {
+                id: 'node_dasar',
+                code: '1A-1',
+                shortLabel: 'Dasar Berkecuali',
+                category: '1A • Latar Belakang Penyertaan',
+                title: 'Perubahan Dasar Luar Malaysia',
+                locationName: 'Kuala Lumpur, Malaysia',
+                lat: 3.139,
+                lon: 101.6869,
+                color: '#38bdf8',
+                bullets: [
+                    'Selepas mencapai kemerdekaan, Malaysia mengamalkan dasar <strong>pro-Barat</strong>.',
+                    'Pada awal tahun 1970-an, Malaysia menamatkan dasar pro-Barat dan mengamalkan <strong>dasar berkecuali</strong> serta menyertai NAM.'
+                ]
+            },
+            {
+                id: 'node_1970',
+                code: '1A-2',
+                shortLabel: 'April 1970 (Tanzania)',
+                category: '1A • Penyertaan Rasmi',
+                title: 'Penyertaan Rasmi Malaysia (April 1970)',
+                locationName: 'Dar es Salam, Tanzania',
+                lat: -6.7924,
+                lon: 39.2083,
+                color: '#fbbf24',
+                bullets: [
+                    'Malaysia mula menyertai NAM pada <strong>April 1970</strong>.',
+                    'Wakil Malaysia: <strong>Muhammad Ghazali Shafie</strong> (Setiausaha Tetap Kementerian Luar Negeri) menghadiri mesyuarat penyediaan Sidang Kemuncak NAM di <strong>Dar es Salam, Tanzania</strong>.'
+                ]
+            },
+            {
+                id: 'node_prinsip',
+                code: '1A-3',
+                shortLabel: 'Prinsip NAM',
+                category: '1A • Prinsip Perjuangan',
+                title: 'Prinsip Perjuangan Malaysia dalam NAM',
+                locationName: 'Pentas Antarabangsa',
+                lat: 20.0,
+                lon: 75.0,
+                color: '#a855f7',
+                bullets: [
+                    'Penyertaan dalam NAM membuktikan perubahan dasar luar Malaysia kepada dasar yang lebih terbuka.',
+                    'Berteraskan prinsip <strong>neutral, aman, bebas dan berkecuali</strong>.'
+                ]
+            },
+            {
+                id: 'node_kl2003',
+                code: '1B-1',
+                shortLabel: 'Sidang KL 2003',
+                category: '1B • Tuan Rumah & Pengerusi NAM',
+                title: 'Sidang Kemuncak NAM ke-13 (2003–2006)',
+                locationName: 'Kuala Lumpur (Tuan Rumah 2003)',
+                lat: 5.5,
+                lon: 103.5,
+                color: '#c084fc',
+                bullets: [
+                    '<strong>Tuan Rumah 2003:</strong> Malaysia menjadi tuan rumah Sidang Kemuncak NAM ke-13 pada tahun 2003 di Kuala Lumpur.',
+                    '<strong>Deklarasi Kuala Lumpur:</strong> Menegaskan sikap NAM terhadap isu Palestin serta membantah serangan Amerika Syarikat ke atas Iraq.',
+                    '<strong>Pengerusi NAM (2003–2006):</strong> Tun Abdullah Ahmad Badawi dilantik sebagai Pengerusi NAM dan meningkatkan martabat pertubuhan ini.'
+                ]
+            },
+            {
+                id: 'node_aparteid',
+                code: '1B-2a',
+                shortLabel: 'Anti-Aparteid',
+                category: '1B • Politik & Hak Asasi Manusia',
+                title: 'Menentang Dasar Aparteid di Afrika Selatan',
+                locationName: 'Afrika Selatan',
+                lat: -29.0,
+                lon: 24.0,
+                color: '#10b981',
+                bullets: [
+                    'Malaysia menggunakan platform NAM untuk <strong>menentang dasar Aparteid</strong>.',
+                    'Menyokong <strong>tekanan politik serta ekonomi</strong> terhadap Afrika Selatan.'
+                ]
+            },
+            {
+                id: 'node_bosnia',
+                code: '1B-2b',
+                shortLabel: 'Isu Bosnia (1992)',
+                category: '1B • Politik & Hak Asasi Manusia',
+                title: 'Isu Bosnia & Herzegovina (Sidang Jakarta 1992)',
+                locationName: 'Jakarta & Sarajevo (Bosnia)',
+                lat: 43.8563,
+                lon: 18.4131,
+                color: '#34d399',
+                bullets: [
+                    'Pada <strong>Sidang Kemuncak NAM 1992 di Jakarta</strong>, Malaysia membangkitkan isu pencerobohan Serbia terhadap Bosnia.',
+                    'Usaha ini membawa kepada <strong>penggantungan Yugoslavia</strong> daripada NAM dan Malaysia turut <strong>menerima pelarian Bosnia dan Herzegovina</strong>.'
+                ]
+            },
+            {
+                id: 'node_lusaka',
+                code: '1B-3',
+                shortLabel: 'Lusaka 1970 (Nuklear)',
+                category: '1B • Dasar Keamanan & Senjata Nuklear',
+                title: 'Perisytiharan Lusaka (1970) & Kawasan Berkecuali',
+                locationName: 'Lusaka, Zambia',
+                lat: -15.3875,
+                lon: 28.3228,
+                color: '#f43f5e',
+                bullets: [
+                    '<strong>Perisytiharan Lusaka (1970):</strong> Malaysia menandatangani perisytiharan ini sebagai komitmen NAM mendesak <strong>pengharaman penggunaan senjata nuklear</strong>.',
+                    '<strong>Bebas Campur Tangan Kuasa Besar:</strong> Mendesak Amerika Syarikat, Rusia dan China mengiktiraf Asia Tenggara sebagai kawasan berkecuali dan tidak campur tangan.'
+                ]
+            }
+        ];
+
+        const spmPopularData = {
+            1: {
+                badge: 'SOALAN POPULAR #1',
+                colorClass: 'text-pink-300 border-pink-400/50 bg-pink-500/20',
+                question: 'Bilakah Malaysia menyertai NAM?',
+                answerHtml: `
+                    <p>• Malaysia mula menyertai NAM pada <strong class="text-amber-300">April 1970</strong>.</p>
+                    <p>• Penyertaan rasmi ini berlaku apabila <strong class="text-sky-300">Muhammad Ghazali Shafie</strong> (Setiausaha Tetap Kementerian Luar Negeri) menghadiri mesyuarat penyediaan Sidang Kemuncak NAM di <strong class="text-emerald-300">Dar es Salam, Tanzania</strong>.</p>
+                `,
+                nodeId: 'node_1970'
+            },
+            2: {
+                badge: 'SOALAN POPULAR #2',
+                colorClass: 'text-sky-300 border-sky-400/50 bg-sky-500/20',
+                question: 'Mengapakah Malaysia menyertai NAM?',
+                answerHtml: `
+                    <p>• Kerana berlaku <strong class="text-sky-300">perubahan dasar luar Malaysia</strong> pada awal tahun 1970-an daripada dasar pro-Barat kepada <strong class="text-amber-300">dasar berkecuali</strong>.</p>
+                    <p>• Membuktikan perubahan dasar luar Malaysia kepada dasar yang lebih terbuka berteraskan prinsip <strong class="text-emerald-300">neutral, aman, bebas dan berkecuali</strong>.</p>
+                `,
+                nodeId: 'node_dasar'
+            },
+            3: {
+                badge: 'SOALAN POPULAR #3',
+                colorClass: 'text-amber-300 border-amber-400/50 bg-amber-500/20',
+                question: 'Apakah peranan Malaysia dalam NAM?',
+                answerHtml: `
+                    <p>• <strong>Tuan Rumah & Pengerusi NAM:</strong> Menjadi tuan rumah Sidang Kemuncak NAM ke-13 (2003) di Kuala Lumpur dan Tun Abdullah Ahmad Badawi menjadi Pengerusi NAM (2003–2006).</p>
+                    <p>• <strong>Politik & Hak Asasi Manusia:</strong> Menentang dasar Aparteid di Afrika Selatan serta membangkitkan isu Bosnia dan Herzegovina (Sidang NAM 1992 di Jakarta).</p>
+                    <p>• <strong>Keamanan & Kawalan Nuklear:</strong> Menandatangani Perisytiharan Lusaka (1970) dan mendesak kuasa besar (AS, Rusia, China) tidak campur tangan di Asia Tenggara.</p>
+                `,
+                nodeId: 'node_kl2003'
+            },
+            4: {
+                badge: 'SOALAN POPULAR #4',
+                colorClass: 'text-purple-300 border-purple-400/50 bg-purple-500/20',
+                question: 'Mengapakah Sidang Kemuncak NAM 2003 penting kepada Malaysia?',
+                answerHtml: `
+                    <p>• Malaysia menjadi tuan rumah <strong class="text-purple-300">Sidang Kemuncak NAM ke-13 di Kuala Lumpur</strong> dan mengeluarkan <strong class="text-amber-300">Deklarasi Kuala Lumpur</strong> (menegaskan sikap NAM terhadap isu Palestin serta membantah serangan AS ke atas Iraq).</p>
+                    <p>• <strong class="text-sky-300">Tun Abdullah Ahmad Badawi</strong> dilantik sebagai Pengerusi NAM bagi tempoh <strong class="text-emerald-300">2003 hingga 2006</strong> dan berjaya meningkatkan martabat pertubuhan ini.</p>
+                `,
+                nodeId: 'node_kl2003'
+            },
+            5: {
+                badge: 'SOALAN POPULAR #5',
+                colorClass: 'text-emerald-300 border-emerald-400/50 bg-emerald-500/20',
+                question: 'Bagaimanakah Malaysia menunjukkan komitmen terhadap keamanan dunia melalui NAM?',
+                answerHtml: `
+                    <p>• Menandatangani <strong class="text-rose-300">Perisytiharan Lusaka (1970)</strong> bagi mendesak pengharaman penggunaan senjata nuklear.</p>
+                    <p>• Menolak campur tangan kuasa besar (<strong class="text-amber-300">Amerika Syarikat, Rusia dan China</strong>) agar mengiktiraf Asia Tenggara sebagai kawasan berkecuali.</p>
+                    <p>• Memperjuangkan keamanan serta kedaulatan negara kecil termasuk isu Palestin, Iraq, dan Bosnia-Herzegovina.</p>
+                `,
+                nodeId: 'node_lusaka'
+            }
+        };
+
+        const qaList = [
+            {
+                qNum: 'Q1',
+                aNum: 'A1',
+                question: 'Bilakah Malaysia mula menyertai NAM?',
+                answer: 'Malaysia mula menyertai NAM pada April 1970.',
+                badgeText: 'APRIL 1970',
+                icon: 'calendar'
+            },
+            {
+                qNum: 'Q2',
+                aNum: 'A2',
+                question: 'Siapakah wakil Malaysia yang menghadiri mesyuarat penyediaan Sidang Kemuncak NAM pada tahun 1970?',
+                answer: 'Muhammad Ghazali Shafie, Setiausaha Tetap Kementerian Luar Negeri.',
+                badgeText: 'TOKOH DIPLOMAT',
+                icon: 'user-check'
+            },
+            {
+                qNum: 'Q3',
+                aNum: 'A3',
+                question: 'Apakah bukti penting penglibatan Malaysia dalam NAM pada tahun 2003?',
+                answer: 'Malaysia menjadi tuan rumah Sidang Kemuncak NAM ke-13 di Kuala Lumpur dan seterusnya mempengerusikan NAM bagi tempoh 2003 hingga 2006.',
+                badgeText: 'KL 2003–2006',
+                icon: 'landmark'
+            },
+            {
+                qNum: 'Q4',
+                aNum: 'A4',
+                question: 'Apakah pendirian Malaysia terhadap dasar Aparteid?',
+                answer: 'Malaysia menentang dasar Aparteid dan menyokong tekanan politik serta ekonomi terhadap Afrika Selatan.',
+                badgeText: 'ANTI-APARTEID',
+                icon: 'shield-alert'
+            },
+            {
+                qNum: 'Q5',
+                aNum: 'A5',
+                question: 'Apakah usaha Malaysia berkaitan isu Bosnia dan Herzegovina?',
+                answer: 'Malaysia membangkitkan isu Bosnia pada Sidang Kemuncak NAM 1992 di Jakarta, menyokong penggantungan Yugoslavia dan menerima pelarian Bosnia dan Herzegovina.',
+                badgeText: 'JAKARTA 1992',
+                icon: 'heart-handshake'
+            },
+            {
+                qNum: 'Q6',
+                aNum: 'A6',
+                question: 'Bagaimanakah Malaysia menyokong keamanan dunia melalui NAM?',
+                answer: 'Malaysia menyokong pengharaman senjata nuklear, menolak campur tangan kuasa besar, dan memperjuangkan keamanan serta kedaulatan negara kecil.',
+                badgeText: 'BEBAS NUKLEAR',
+                icon: 'globe-2'
+            }
+        ];
+
+        // ==========================================
+        // 2. THREE.JS 3D DIPLOMATIC GLOBE & MONUMENT
+        // ==========================================
+        let scene, camera, renderer, globeGroup, ringsGroup, starsMesh;
+        let autoRotate = true;
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let targetRotation = { x: 0.18, y: -1.6 };
+        let currentRotation = { x: 0.18, y: -1.6 };
+        let targetCameraZ = 12.5;
+        const globeRadius = 4.2;
+        const hotspotObjects = [];
+
+        function latLonToVector3(lat, lon, radius) {
+            const phi = (90 - lat) * (Math.PI / 180);
+            const theta = (lon + 180) * (Math.PI / 180);
+            const x = -(radius * Math.sin(phi) * Math.cos(theta));
+            const z = (radius * Math.sin(phi) * Math.sin(theta));
+            const y = (radius * Math.cos(phi));
+            return new THREE.Vector3(x, y, z);
+        }
+
+        function initThreeJS() {
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x030b1c, 0.032);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 0.4, targetCameraZ);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Ambient & Directional Lights
+            const ambientLight = new THREE.AmbientLight(0xbae6fd, 0.75);
+            scene.add(ambientLight);
+
+            const dirLight1 = new THREE.DirectionalLight(0x38bdf8, 1.4);
+            dirLight1.position.set(10, 15, 12);
+            scene.add(dirLight1);
+
+            const dirLight2 = new THREE.DirectionalLight(0xfbbf24, 1.0);
+            dirLight2.position.set(-12, -8, 8);
+            scene.add(dirLight2);
+
+            // Main Globe Group
+            globeGroup = new THREE.Group();
+            // Position slightly to the left on desktop so the right inspector panel has breathing room
+            if (window.innerWidth > 1024) {
+                globeGroup.position.x = -2.2;
+            }
+            scene.add(globeGroup);
+
+            // 1. Core Ocean Sphere
+            const sphereGeo = new THREE.SphereGeometry(globeRadius, 64, 64);
+            const sphereMat = new THREE.MeshPhongMaterial({
+                color: 0x072652,
+                emissive: 0x041533,
+                specular: 0x38bdf8,
+                shininess: 35,
+                transparent: true,
+                opacity: 0.95
+            });
+            const oceanSphere = new THREE.Mesh(sphereGeo, sphereMat);
+            globeGroup.add(oceanSphere);
+
+            // 2. Wireframe Lat/Lon Grid Overlay (Emblem style)
+            const wireGeo = new THREE.SphereGeometry(globeRadius + 0.03, 32, 24);
+            const wireMat = new THREE.MeshBasicMaterial({
+                color: 0x38bdf8,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.16
+            });
+            const wireSphere = new THREE.Mesh(wireGeo, wireMat);
+            globeGroup.add(wireSphere);
+
+            // 3. Procedural Continental Dots / Landmasses Approximation
+            const dotsGeo = new THREE.BufferGeometry();
+            const dotPositions = [];
+            for (let i = 0; i < 1600; i++) {
+                const u = Math.random();
+                const v = Math.random();
+                const theta = u * 2.0 * Math.PI;
+                const phi = Math.acos(2.0 * v - 1.0);
+                const r = globeRadius + 0.05;
+                const x = r * Math.sin(phi) * Math.cos(theta);
+                const y = r * Math.cos(phi);
+                const z = r * Math.sin(phi) * Math.sin(theta);
+                dotPositions.push(x, y, z);
+            }
+            dotsGeo.setAttribute('position', new THREE.Float32BufferAttribute(dotPositions, 3));
+            const dotsMat = new THREE.PointsMaterial({
+                color: 0x7dd3fc,
+                size: 0.055,
+                transparent: true,
+                opacity: 0.45
+            });
+            const globeDots = new THREE.Points(dotsGeo, dotsMat);
+            globeGroup.add(globeDots);
+
+            // 4. Orbital Peace Rings & Golden Olive Wreath Ring
+            ringsGroup = new THREE.Group();
+            globeGroup.add(ringsGroup);
+
+            const ring1Geo = new THREE.TorusGeometry(globeRadius + 0.9, 0.03, 16, 100);
+            const ring1Mat = new THREE.MeshBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.65 });
+            const ring1 = new THREE.Mesh(ring1Geo, ring1Mat);
+            ring1.rotation.x = Math.PI / 2.3;
+            ringsGroup.add(ring1);
+
+            const ring2Geo = new THREE.TorusGeometry(globeRadius + 1.35, 0.02, 16, 100);
+            const ring2Mat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.4 });
+            const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
+            ring2.rotation.x = -Math.PI / 3;
+            ring2.rotation.y = Math.PI / 6;
+            ringsGroup.add(ring2);
+
+            // 5. Add 3D Pins & Diplomatic Arcs from Kuala Lumpur to NAM Locations
+            const klPos = latLonToVector3(3.139, 101.6869, globeRadius);
+
+            nodes3DData.forEach((node, index) => {
+                const pos = latLonToVector3(node.lat, node.lon, globeRadius);
+
+                // 3D Beacon Sphere on Surface
+                const pinGeo = new THREE.SphereGeometry(0.14, 16, 16);
+                const pinMat = new THREE.MeshBasicMaterial({ color: node.color });
+                const pinMesh = new THREE.Mesh(pinGeo, pinMat);
+                pinMesh.position.copy(pos);
+                globeGroup.add(pinMesh);
+
+                // Outer Halo Ring
+                const haloGeo = new THREE.RingGeometry(0.18, 0.26, 24);
+                const haloMat = new THREE.MeshBasicMaterial({
+                    color: node.color,
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                const haloMesh = new THREE.Mesh(haloGeo, haloMat);
+                haloMesh.position.copy(pos.clone().multiplyScalar(1.01));
+                haloMesh.lookAt(pos.clone().multiplyScalar(2));
+                globeGroup.add(haloMesh);
+
+                // Diplomatic Flight Arc connecting KL to other nodes
+                if (node.id !== 'node_dasar') {
+                    const midPoint = pos.clone().add(klPos).multiplyScalar(0.5).normalize().multiplyScalar(globeRadius + 1.1);
+                    const curve = new THREE.QuadraticBezierCurve3(klPos, midPoint, pos);
+                    const points = curve.getPoints(40);
+                    const arcGeo = new THREE.BufferGeometry().setFromPoints(points);
+                    const arcMat = new THREE.LineBasicMaterial({
+                        color: node.color,
+                        transparent: true,
+                        opacity: 0.65
+                    });
+                    const arcLine = new THREE.Line(arcGeo, arcMat);
+                    globeGroup.add(arcLine);
+                }
+
+                // Create HTML Floating Hotspot Element
+                const markerEl = document.createElement('div');
+                markerEl.className = 'hotspot-marker';
+                markerEl.innerHTML = `
+                    <div onclick="selectNode('${node.id}')" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-950/90 border border-sky-400/60 shadow-lg hover:border-amber-400 transition-all">
+                        <span class="w-2.5 h-2.5 rounded-full pulse-dot" style="background:${node.color}; color:${node.color}"></span>
+                        <span class="text-[11px] font-extrabold text-white whitespace-nowrap">${node.code}: ${node.shortLabel}</span>
+                    </div>
+                `;
+                document.getElementById('hotspots-layer').appendChild(markerEl);
+
+                hotspotObjects.push({
+                    nodeData: node,
+                    mesh: pinMesh,
+                    element: markerEl
+                });
+            });
+
+            // 6. Background Starfield
+            const starsGeo = new THREE.BufferGeometry();
+            const starCoords = [];
+            for (let i = 0; i < 1200; i++) {
+                starCoords.push(
+                    (Math.random() - 0.5) * 90,
+                    (Math.random() - 0.5) * 90,
+                    (Math.random() - 0.5) * 90 - 15
+                );
+            }
+            starsGeo.setAttribute('position', new THREE.Float32BufferAttribute(starCoords, 3));
+            const starsMat = new THREE.PointsMaterial({ color: 0xe0f2fe, size: 0.08, transparent: true, opacity: 0.7 });
+            starsMesh = new THREE.Points(starsGeo, starsMat);
+            scene.add(starsMesh);
+
+            // Pointer / Touch Events for Rotating the 3D Globe
+            const domElem = renderer.domElement;
+            domElem.addEventListener('mousedown', onPointerDown);
+            window.addEventListener('mousemove', onPointerMove);
+            window.addEventListener('mouseup', onPointerUp);
+
+            domElem.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    isDragging = true;
+                    autoRotate = false;
+                    previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+            }, { passive: true });
+
+            window.addEventListener('touchmove', (e) => {
+                if (!isDragging || e.touches.length !== 1) return;
+                const deltaX = e.touches[0].clientX - previousMousePosition.x;
+                const deltaY = e.touches[0].clientY - previousMousePosition.y;
+                targetRotation.y += deltaX * 0.006;
+                targetRotation.x = Math.max(-1.1, Math.min(1.1, targetRotation.x + deltaY * 0.006));
+                previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }, { passive: true });
+
+            window.addEventListener('touchend', () => { isDragging = false; });
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function onPointerDown(e) {
+            isDragging = true;
+            autoRotate = false;
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        }
+
+        function onPointerMove(e) {
+            if (!isDragging) return;
+            const deltaX = e.clientX - previousMousePosition.x;
+            const deltaY = e.clientY - previousMousePosition.y;
+            targetRotation.y += deltaX * 0.006;
+            targetRotation.x = Math.max(-1.1, Math.min(1.1, targetRotation.x + deltaY * 0.006));
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        }
+
+        function onPointerUp() {
+            isDragging = false;
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            if (globeGroup) {
+                globeGroup.position.x = (window.innerWidth > 1024 && currentMode === 'explore3d') ? -2.2 : 0;
+            }
+        }
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+
+            if (autoRotate && !isDragging) {
+                targetRotation.y += 0.0022;
+            }
+
+            // Smooth damping
+            currentRotation.x += (targetRotation.x - currentRotation.x) * 0.08;
+            currentRotation.y += (targetRotation.y - currentRotation.y) * 0.08;
+
+            if (globeGroup) {
+                globeGroup.rotation.x = currentRotation.x;
+                globeGroup.rotation.y = currentRotation.y;
+            }
+
+            if (ringsGroup) {
+                ringsGroup.rotation.z += 0.003;
+            }
+
+            if (starsMesh) {
+                starsMesh.rotation.y -= 0.0003;
+            }
+
+            camera.position.z += (targetCameraZ - camera.position.z) * 0.08;
+
+            // Update 2D HTML Hotspots aligned with 3D Pins
+            const hotspotsLayer = document.getElementById('hotspots-layer');
+            if (currentMode === 'explore3d') {
+                hotspotsLayer.style.display = 'block';
+                hotspotObjects.forEach(item => {
+                    const worldPos = new THREE.Vector3();
+                    item.mesh.getWorldPosition(worldPos);
+
+                    // Check if pin is facing the camera
+                    const camToGlobe = new THREE.Vector3().subVectors(globeGroup.position, camera.position).normalize();
+                    const globeToPin = new THREE.Vector3().subVectors(worldPos, globeGroup.position).normalize();
+                    const dot = camToPinDot(worldPos);
+
+                    if (dot > 0.15) {
+                        const projected = worldPos.clone().project(camera);
+                        const x = (projected.x * 0.5 + 0.5) * window.innerWidth;
+                        const y = (-(projected.y * 0.5) + 0.5) * window.innerHeight;
+                        item.element.style.left = `${x}px`;
+                        item.element.style.top = `${y}px`;
+                        item.element.style.opacity = '1';
+                        item.element.style.pointerEvents = 'auto';
+                    } else {
+                        item.element.style.opacity = '0.12';
+                        item.element.style.pointerEvents = 'none';
+                    }
+                });
+            } else {
+                hotspotsLayer.style.display = 'none';
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function camToPinDot(worldPos) {
+            const normal = new THREE.Vector3().subVectors(worldPos, globeGroup.position).normalize();
+            const viewVector = new THREE.Vector3().subVectors(camera.position, worldPos).normalize();
+            return normal.dot(viewVector);
+        }
+
+        // ==========================================
+        // 3. UI INTERACTION & NAVIGATION LOGIC
+        // ==========================================
+        let currentMode = 'explore3d';
+
+        function switchMode(mode) {
+            currentMode = mode;
+            const modes = ['explore3d', 'sec1', 'sec2', 'sec3', 'quiz'];
+            modes.forEach(m => {
+                const section = document.getElementById(`view-${m}`);
+                const tab = document.getElementById(`tab-${m}`);
+                if (m === mode) {
+                    section.classList.remove('hidden');
+                    tab.classList.add('bg-gradient-to-r', 'from-sky-500', 'to-blue-600', 'text-white', 'shadow-lg');
+                    tab.classList.remove('text-slate-300');
+                } else {
+                    section.classList.add('hidden');
+                    tab.classList.remove('bg-gradient-to-r', 'from-sky-500', 'to-blue-600', 'text-white', 'shadow-lg');
+                    tab.classList.add('text-slate-300');
+                }
+            });
+
+            if (globeGroup) {
+                globeGroup.position.x = (window.innerWidth > 1024 && mode === 'explore3d') ? -2.2 : 0;
+            }
+        }
+
+        function selectNode(nodeId) {
+            const node = nodes3DData.find(n => n.id === nodeId);
+            if (!node) return;
+
+            autoRotate = false;
+            // Rotate globe so the chosen lat/lon faces the camera
+            const targetLonRad = -(node.lon + 90) * (Math.PI / 180);
+            const targetLatRad = node.lat * (Math.PI / 180) * 0.65;
+            targetRotation.y = targetLonRad;
+            targetRotation.x = targetLatRad;
+
+            // Update Inspector UI
+            document.getElementById('inspector-badge').textContent = node.code;
+            document.getElementById('inspector-badge').style.borderColor = node.color;
+            document.getElementById('inspector-badge').style.color = node.color;
+            document.getElementById('inspector-category').textContent = node.category;
+            document.getElementById('inspector-title').textContent = node.title;
+            document.getElementById('inspector-coords').textContent = node.locationName;
+
+            const bodyEl = document.getElementById('inspector-body');
+            bodyEl.innerHTML = node.bullets.map(b => `<p>• ${b}</p>`).join('');
+        }
+
+        function selectNodeFromCard(nodeId) {
+            switchMode('explore3d');
+            selectNode(nodeId);
+        }
+
+        function focusCameraOnNode(type) {
+            autoRotate = true;
+            targetCameraZ = 12.5;
+            switchMode('explore3d');
+        }
+
+        function rotateGlobeToggle() {
+            autoRotate = !autoRotate;
+        }
+
+        function zoomCamera(delta) {
+            targetCameraZ = Math.max(7.5, Math.min(18, targetCameraZ + delta));
+        }
+
+        function renderQuickNodeButtons() {
+            const container = document.getElementById('quick-node-buttons');
+            container.innerHTML = nodes3DData.map(n => `
+                <button onclick="selectNode('${n.id}')" class="px-2 py-1.5 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-700 hover:border-sky-400 text-[11px] font-bold text-slate-200 truncate text-left flex items-center gap-1.5 transition-all">
+                    <span class="w-2 h-2 rounded-full shrink-0" style="background:${n.color}"></span>
+                    <span class="truncate">${n.shortLabel}</span>
+                </button>
+            `).join('');
+        }
+
+        // Section 2: SPM Popular Questions Handler
+        function showSpmHotspot(num) {
+            const data = spmPopularData[num];
+            if (!data) return;
+
+            const badge = document.getElementById('spm-detail-badge');
+            badge.className = `px-3 py-1 rounded-full border text-xs font-extrabold ${data.colorClass}`;
+            badge.textContent = data.badge;
+
+            document.getElementById('spm-detail-question').textContent = data.question;
+            document.getElementById('spm-detail-answer').innerHTML = data.answerHtml;
+
+            // Rotate background 3D globe to corresponding node
+            const node = nodes3DData.find(n => n.id === data.nodeId);
+            if (node) {
+                autoRotate = false;
+                targetRotation.y = -(node.lon + 90) * (Math.PI / 180);
+                targetRotation.x = node.lat * (Math.PI / 180) * 0.65;
+            }
+        }
+
+        // Section 3: Render 3D Flip Cards Q1 - Q6
+        function renderQACards() {
+            const grid = document.getElementById('qa-cards-grid');
+            grid.innerHTML = qaList.map((item, idx) => `
+                <div class="flip-card cursor-pointer" onclick="this.classList.toggle('flipped')">
+                    <div class="flip-card-inner">
+                        <!-- FRONT: QUESTION -->
+                        <div class="flip-card-front glass-panel p-5 flex flex-col justify-between border-t-4 border-sky-400">
+                            <div class="flex items-center justify-between">
+                                <span class="px-3 py-1 rounded-lg bg-sky-600 text-white font-display font-black text-sm shadow">${item.qNum}</span>
+                                <span class="text-[11px] font-bold text-sky-300 uppercase tracking-wider flex items-center gap-1">
+                                    <i data-lucide="${item.icon}" class="w-3.5 h-3.5"></i> ${item.badgeText}
+                                </span>
+                            </div>
+                            <h3 class="text-sm md:text-base font-extrabold text-white leading-snug my-auto py-2">
+                                ${item.question}
+                            </h3>
+                            <div class="flex items-center justify-between text-xs text-amber-300 font-bold pt-2 border-t border-slate-700/60">
+                                <span>Klik untuk Jawapan Tepat (${item.aNum})</span>
+                                <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+
+                        <!-- BACK: ANSWER -->
+                        <div class="flip-card-back glass-panel p-5 flex flex-col justify-between border-t-4 border-amber-400 bg-slate-900/95">
+                            <div class="flex items-center justify-between">
+                                <span class="px-3 py-1 rounded-lg bg-amber-400 text-slate-950 font-display font-black text-sm shadow">${item.aNum}</span>
+                                <span class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">JAWAPAN TEPAT SPM</span>
+                            </div>
+                            <p class="text-xs md:text-sm text-slate-100 font-medium leading-relaxed my-auto py-2">
+                                ${item.answer}
+                            </p>
+                            <div class="flex items-center justify-between text-xs text-slate-400 font-semibold pt-2 border-t border-slate-700/60">
+                                <span>Klik untuk kembali ke soalan</span>
+                                <i data-lucide="undo-2" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function flipAllCards() {
+            const cards = document.querySelectorAll('.flip-card');
+            const anyUnflipped = Array.from(cards).some(c => !c.classList.contains('flipped'));
+            cards.forEach(c => {
+                if (anyUnflipped) c.classList.add('flipped');
+                else c.classList.remove('flipped');
+            });
+        }
+
+        // ==========================================
+        // 4. INTERACTIVE SPM QUIZ LOGIC
+        // ==========================================
+        const quizQuestions = [
+            {
+                q: "Bilakah Malaysia mula menyertai Pergerakan Negara-Negara Berkecuali (NAM)?",
+                options: ["Ogos 1957", "September 1963", "April 1970", "Oktober 2003"],
+                correct: 2,
+                explanation: "Malaysia mula menyertai NAM secara rasmi pada April 1970."
+            },
+            {
+                q: "Siapakah wakil Malaysia yang menghadiri mesyuarat penyediaan Sidang Kemuncak NAM di Dar es Salam, Tanzania pada tahun 1970?",
+                options: [
+                    "Muhammad Ghazali Shafie",
+                    "Tun Abdullah Ahmad Badawi",
+                    "Tunku Abdul Rahman",
+                    "Tun Abdul Razak"
+                ],
+                correct: 0,
+                explanation: "Muhammad Ghazali Shafie (Setiausaha Tetap Kementerian Luar Negeri) mewakili Malaysia pada April 1970."
+            },
+            {
+                q: "Apakah bukti penting penglibatan Malaysia dalam NAM pada tahun 2003?",
+                options: [
+                    "Menandatangani Perisytiharan Lusaka",
+                    "Menjadi tuan rumah Sidang Kemuncak NAM ke-13 di Kuala Lumpur & Pengerusi NAM (2003–2006)",
+                    "Membangkitkan isu Bosnia di Jakarta",
+                    "Menubuhkan ibu pejabat NAM di Putrajaya"
+                ],
+                correct: 1,
+                explanation: "Malaysia menjadi tuan rumah Sidang Kemuncak NAM ke-13 di Kuala Lumpur pada 2003 dan Tun Abdullah Ahmad Badawi mempengerusikan NAM (2003–2006)."
+            },
+            {
+                q: "Apakah pendirian Malaysia terhadap dasar Aparteid melalui platform NAM?",
+                options: [
+                    "Mengamalkan sikap berkecuali tanpa sebarang tekanan",
+                    "Menentang dasar Aparteid dan menyokong tekanan politik serta ekonomi terhadap Afrika Selatan",
+                    "Menjalinkan kerjasama perdagangan dengan Afrika Selatan",
+                    "Menghantar tentera pengaman ke Afrika Selatan"
+                ],
+                correct: 1,
+                explanation: "Malaysia menentang dasar Aparteid dan menyokong tekanan politik serta ekonomi terhadap Afrika Selatan."
+            },
+            {
+                q: "Apakah hasil perjuangan Malaysia membangkitkan isu pencerobohan Serbia terhadap Bosnia pada Sidang Kemuncak NAM 1992 di Jakarta?",
+                options: [
+                    "Yugoslavia digantung daripada NAM dan Malaysia menerima pelarian Bosnia dan Herzegovina",
+                    "Deklarasi Kuala Lumpur ditandatangani",
+                    "Perisytiharan Lusaka dimeterai",
+                    "Penubuhan ZOPFAN"
+                ],
+                correct: 0,
+                explanation: "Usaha Malaysia pada Sidang Kemuncak NAM 1992 di Jakarta membawa kepada penggantungan Yugoslavia daripada NAM serta penerimaan pelarian Bosnia."
+            },
+            {
+                q: "Mengapakah Malaysia menandatangani Perisytiharan Lusaka pada tahun 1970?",
+                options: [
+                    "Membantah serangan Amerika Syarikat ke atas Iraq",
+                    "Mendesak pengharaman penggunaan senjata nuklear",
+                    "Menamatkan dasar pro-Barat",
+                    "Menyokong kemerdekaan Palestin"
+                ],
+                correct: 1,
+                explanation: "Perisytiharan Lusaka (1970) ditandatangani sebagai komitmen NAM mendesak pengharaman penggunaan senjata nuklear."
+            }
+        ];
+
+        let currentQuizIndex = 0;
+        let quizScore = 0;
+        let quizAnswered = false;
+
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            document.getElementById('quiz-score-badge').textContent = `${quizScore} / ${quizQuestions.length}`;
+
+            if (currentQuizIndex >= quizQuestions.length) {
+                container.innerHTML = `
+                    <div class="text-center py-6 space-y-4">
+                        <div class="w-16 h-16 rounded-full bg-amber-400/20 border-2 border-amber-400 text-amber-300 flex items-center justify-center mx-auto">
+                            <i data-lucide="party-popper" class="w-8 h-8"></i>
+                        </div>
+                        <h3 class="font-display text-2xl font-black text-white">TAHNIAH! KUIZ SELESAI</h3>
+                        <p class="text-slate-300 text-sm">Anda berjaya memperoleh skor <strong class="text-amber-300 text-lg">${quizScore} daripada ${quizQuestions.length}</strong> soalan tepat berdasarkan infografik Malaysia dalam NAM.</p>
+                        <button onclick="resetQuiz()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-extrabold text-sm shadow-lg">
+                            Cuba Semula Kuiz
+                        </button>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            const qObj = quizQuestions[currentQuizIndex];
+            container.innerHTML = `
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between text-xs font-bold text-sky-400">
+                        <span>SOALAN ${currentQuizIndex + 1} DARIPADA ${quizQuestions.length}</span>
+                        <span>Subtopik 9.7: Malaysia dalam NAM</span>
+                    </div>
+                    <h3 class="text-base md:text-lg font-extrabold text-white leading-snug">${qObj.q}</h3>
+                    <div class="space-y-2.5">
+                        ${qObj.options.map((opt, idx) => `
+                            <button onclick="answerQuiz(${idx})" id="quiz-opt-${idx}" class="w-full text-left p-3.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-xs md:text-sm font-semibold text-slate-200 transition-all flex items-center gap-3">
+                                <span class="w-6 h-6 rounded-lg bg-slate-800 border border-slate-600 flex items-center justify-center font-display text-xs font-bold text-sky-300 shrink-0">${String.fromCharCode(65 + idx)}</span>
+                                <span>${opt}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                    <div id="quiz-feedback" class="hidden p-4 rounded-xl text-xs md:text-sm"></div>
+                </div>
+            `;
+        }
+
+        function answerQuiz(selectedIdx) {
+            if (quizAnswered) return;
+            quizAnswered = true;
+
+            const qObj = quizQuestions[currentQuizIndex];
+            const feedback = document.getElementById('quiz-feedback');
+            feedback.classList.remove('hidden');
+
+            qObj.options.forEach((_, idx) => {
+                const btn = document.getElementById(`quiz-opt-${idx}`);
+                if (idx === qObj.correct) {
+                    btn.className = "w-full text-left p-3.5 rounded-xl bg-emerald-950/90 border-2 border-emerald-400 text-xs md:text-sm font-bold text-emerald-200 flex items-center gap-3";
+                } else if (idx === selectedIdx) {
+                    btn.className = "w-full text-left p-3.5 rounded-xl bg-rose-950/90 border-2 border-rose-500 text-xs md:text-sm font-bold text-rose-200 flex items-center gap-3";
+                }
+            });
+
+            if (selectedIdx === qObj.correct) {
+                quizScore++;
+                feedback.className = "p-4 rounded-xl bg-emerald-500/20 border border-emerald-400/50 text-emerald-200 text-xs md:text-sm space-y-2";
+                feedback.innerHTML = `<p class="font-extrabold text-emerald-300">✓ Tepat Sekali!</p><p>${qObj.explanation}</p>`;
+            } else {
+                feedback.className = "p-4 rounded-xl bg-rose-500/20 border border-rose-400/50 text-rose-200 text-xs md:text-sm space-y-2";
+                feedback.innerHTML = `<p class="font-extrabold text-rose-300">✗ Kurang Tepat</p><p>${qObj.explanation}</p>`;
+            }
+
+            feedback.innerHTML += `
+                <div class="pt-2 text-right">
+                    <button onclick="nextQuizQuestion()" class="px-4 py-1.5 rounded-lg bg-amber-400 text-slate-950 font-extrabold text-xs">
+                        Soalan Seterusnya →
+                    </button>
+                </div>
+            `;
+            document.getElementById('quiz-score-badge').textContent = `${quizScore} / ${quizQuestions.length}`;
+        }
+
+        function nextQuizQuestion() {
+            currentQuizIndex++;
+            quizAnswered = false;
+            renderQuiz();
+        }
+
+        function resetQuiz() {
+            currentQuizIndex = 0;
+            quizScore = 0;
+            quizAnswered = false;
+            renderQuiz();
+        }
+
+        // ==========================================
+        // 5. INITIALIZATION ON WINDOW LOAD
+        // ==========================================
+        window.onload = function () {
+            lucide.createIcons();
+            initThreeJS();
+            renderQuickNodeButtons();
+            renderQACards();
+            renderQuiz();
+            selectNode('node_1970');
+            animate3D();
+        };
+    </script>
+</body>
+</html>
